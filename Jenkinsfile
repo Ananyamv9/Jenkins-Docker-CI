@@ -1,12 +1,16 @@
+
 pipeline {
     agent any
 
     environment {
         REGISTRY = "localhost:5000"
         IMAGE_NAME = "abh-app"
+        DOCKER = "C:/Users/STUDENT/AppData/Local/Programs/DockerDesktop/resources/bin/docker.exe"
+        PYTHON = "C:/Users/STUDENT/AppData/Local/Programs/Python/Python313/python.exe"
     }
 
     stages {
+
         stage('1. Checkout Code') {
             steps {
                 checkout scm
@@ -15,27 +19,44 @@ pipeline {
 
         stage('2. Application Build & Test') {
             steps {
-                bat '"C:/Users/STUDENT/AppData/Local/Programs/Python/Python313/python.exe" app.py'
+                echo "Running Python Application..."
+
+                bat "\"${PYTHON}\" app.py"
             }
         }
 
         stage('3. Build & Tag Docker Image') {
             steps {
-                bat "docker build -t ${REGISTRY}/${IMAGE_NAME}:${BUILD_NUMBER} -t ${REGISTRY}/${IMAGE_NAME}:latest ."
+                echo "Building Docker Image..."
+
+                bat "\"${DOCKER}\" build -t ${REGISTRY}/${IMAGE_NAME}:${BUILD_NUMBER} -t ${REGISTRY}/${IMAGE_NAME}:latest ."
             }
         }
 
         stage('4. Push Image to Registry') {
             steps {
-                bat "docker push ${REGISTRY}/${IMAGE_NAME}:${BUILD_NUMBER}"
-                bat "docker push ${REGISTRY}/${IMAGE_NAME}:latest"
+                echo "Pushing Docker Image to Local Registry..."
+
+                bat "\"${DOCKER}\" push ${REGISTRY}/${IMAGE_NAME}:${BUILD_NUMBER}"
+
+                bat "\"${DOCKER}\" push ${REGISTRY}/${IMAGE_NAME}:latest"
             }
         }
     }
 
     post {
         success {
-            echo "Pipeline succeeded! Image ${REGISTRY}/${IMAGE_NAME}:${BUILD_NUMBER} is available locally and in the registry."
+            echo "Pipeline succeeded!"
+            echo "Image ${REGISTRY}/${IMAGE_NAME}:${BUILD_NUMBER} pushed successfully."
+            echo "Image ${REGISTRY}/${IMAGE_NAME}:latest pushed successfully."
+        }
+
+        failure {
+            echo "Pipeline failed! Check Jenkins Console Output."
+        }
+
+        always {
+            echo "Jenkins Pipeline Execution Completed."
         }
     }
 }
